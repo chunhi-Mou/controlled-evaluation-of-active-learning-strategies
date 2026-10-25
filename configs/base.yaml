@@ -1,0 +1,86 @@
+split:
+  seed_index: 0                 # seed used by the full-data baseline
+
+# Every output path is namespaced by protocol_id, so a run with a different
+# protocol can neither resume from nor overwrite these results.
+protocol_id: yolov8n_100e_v1
+
+train: &train
+  model: yolov8n.pt
+  pretrained: true
+  epochs: 100
+  patience: 0                   # fixed schedule, 0 disables early stopping
+  warmup_epochs: 0.0            # the 5% round has 3 batches per epoch, and Ultralytics would otherwise warm up for 100 batches
+  close_mosaic: 0               # the default would leave only ~30 updates without mosaic in the 5% round
+  imgsz: 640
+  batch: 64
+  rect: false                   # square inputs for evaluation and acquisition
+  max_det: 300                  # SortWaste has at most 36 ground-truth boxes per image
+  workers: 2                    # part of the protocol: fixes the worker RNG assignment
+  cache: disk
+  val: true
+  # Every round is trained from yolov8n.pt, and that round's last.pt is used
+  # for both evaluation and acquisition.
+  eval_checkpoint: last
+
+# Standalone evaluation settings, kept separate from selector thresholds:
+# conf=0.001 is for AP integration and does not affect acquisition.
+evaluation:
+  conf: 0.001
+  iou: 0.7
+  half: false
+  augment: false
+
+baseline:
+  <<: *train
+
+al:
+  <<: *train
+  strategies: [random, ppal, rarity_aware, entropy]
+  initial_pool: random          # one uniform-random initial set per seed, shared by all strategies
+  # Coverage checks on the initial set. A seed that fails stops the run and
+  # is never redrawn.
+  initial_min_images_per_class: 20
+  initial_min_boxes_per_class: 30
+  initial_min_total_boxes: 2500
+  initial_max_background_frac: 0.05
+  seeds_n: 6                    # first seeds_n entries of configs/seeds.yaml
+  acq_batch: 32
+  schedule:
+    init_frac: 0.05
+    step_frac: 0.025
+    cap_frac: 0.20
+  ppal:
+    xi: 0.6
+    ema_momentum: 0.99
+    alpha: 0.3
+    weight_ub: 0.2
+    score_thr: 0.05
+    nms_iou: 0.7               # YOLOv8 adapter setting
+    uncertainty_max_det: 200   # official PPAL cap for uncertainty
+    diversity_max_det: 100     # official PPAL cap for CCMS
+    delta: 4
+    kmeans_iter: 100
+  entropy:
+    score_thr: 0.05
+    nms_iou: 0.70
+    max_det: 300
+    t_enms: 0.5
+    t_intra: 0.7
+    t_inter: 0.3
+    alpha: 0.5
+    beta: 0.75
+  rarity_aware:
+    # Severe-imbalance profile of the source paper (SortWaste imbalance 21.0x).
+    gamma: 2.0
+    beta: 0.6
+    alpha_min: 0.8
+    alpha_max: 2.5
+    rho: 0.5
+    score_thr: 0.0001          # keep up to max_det low-confidence predictions, as in the paper's supplement
+    iou: 0.7                   # YOLOv8 NMS, needed because the source detector (YOLOv10) is NMS-free
+    eps: 1.0e-12
+    kmeans_iter: 100
+  analysis:
+    primary_endpoint: aubc      # aubc | map_at_cap
+    metric: test_mAP50_95

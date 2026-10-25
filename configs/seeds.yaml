@@ -1,0 +1,3 @@
+# Paired seeds. A seed fixes the initial labeled set, Random's draws and the
+# training seed. Runs use the first al.seeds_n entries.
+seeds: [13, 42, 1337, 2718, 31415, 65536]

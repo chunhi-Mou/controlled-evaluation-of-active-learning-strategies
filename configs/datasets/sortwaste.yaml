@@ -1,0 +1,13 @@
+tag: sortwaste
+
+dataset:
+  root: ${DATA_ROOT}/export_sortwaste/train
+  images_dir: images
+  labels_dir: labels
+
+classes:
+  nc: 8
+  names: [PET, HDPE, MixedSoftPlastic, ECAL, Metal, Cardboard, MixedRigidPlastic, PETOil]
+
+split:
+  ratios: [0.704, 0.148, 0.148]   # official train/val/test proportions
