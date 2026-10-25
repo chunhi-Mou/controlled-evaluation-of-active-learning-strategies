@@ -193,6 +193,13 @@ kaggle/                Kaggle notebooks
 tests/                 unit tests for formulas, selectors and protocol guards
 ```
 
+## Contributions
+
+| Contributor | Code |
+|---|---|
+| Chu Tuyết Nhi | Overall framework, Random, PPAL and Rarity-aware selectors, experiments |
+| Lê Thành Thông | Entropy-ENMS-DivProto selector and its tests |
+
 ## Citation
 
 If you use this code, please cite the accompanying paper, as well as SortWaste
